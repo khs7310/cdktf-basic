@@ -1,0 +1,6 @@
+
+
+nameOverride: "miti2"
+
+#nodeSelector:
+#  node: work2.cluster.local

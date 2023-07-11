@@ -1,0 +1,6 @@
+
+
+nameOverride: "four4"
+
+#nodeSelector:
+#  node: work2.cluster.local

@@ -1,0 +1,94 @@
+rom constructs import Construct
+from cdktf import App, TerraformStack, S3Backend, TerraformOutput, TerraformAsset, AssetType
+from cdktf_cdktf_provider_aws import AwsProvider, s3, dynamodb, iam, lambdafunction
+import os
+import os.path as Path
+
+class MyStack(TerraformStack):
+    def __init__(self, scope: Construct, ns: str):
+        super().__init__(scope, ns)
+
+        AwsProvider(self, "AWS", region="us-east-1", profile="CDKTF")
+
+        #S3 Remote Backend
+        S3Backend(self,
+        bucket="cdktf-remote-backend-2",
+        key="first_project/terraform.tfstate",
+        encrypt=True,
+        region="us-east-1",
+        dynamodb_table="cdktf-remote-backend-lock-2",
+        profile="CDKTF",
+        )
+
+        # Resources
+        s3_backend_bucket = s3.S3Bucket(self, "s3_backend_bucket",
+        bucket="cdktf-remote-backend-2",
+        )
+
+        dynamodb_lock_table = dynamodb.DynamodbTable(self, "dynamodb_lock_table",
+        name="cdktf-remote-backend-lock-2",
+        billing_mode="PAY_PER_REQUEST",
+        attribute=[
+            {
+                "name": "LockID",
+                "type": "S"
+            }
+        ],
+        hash_key="LockID",
+        )
+
+        # Asset for Lambda Function
+        asset = TerraformAsset(self, "lambda_file",
+        path = Path.join(os.getcwd(), "lambda"),
+        type = AssetType.ARCHIVE,
+        )
+
+        # IAM Role for Lambda Function
+        lambda_role = iam.IamRole(self, "lambda_role",
+        name="my-lambda-url-role",
+        managed_policy_arns=[
+            "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        ],
+        assume_role_policy="""{
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {
+                        "Service": "lambda.amazonaws.com"
+                    },
+                    "Effect": "Allow",
+                    "Sid": ""
+                }
+            ]
+        }""",
+        )
+
+        # Lambda Function
+        my_lambda = lambdafunction.LambdaFunction(self, "my_lambda",
+        function_name="my-lambda-url",
+        handler="lambda_function.lambda_handler",
+        role=lambda_role.arn,
+        runtime="python3.9",
+        source_code_hash = asset.asset_hash,
+        filename=asset.path,
+        )
+
+        # Lambda Function Url
+        my_lambda_url = lambdafunction.LambdaFunctionUrl(self, "my_lambda_url",
+        function_name=my_lambda.function_name,
+        authorization_type="NONE",
+        )
+
+
+
+        # Outputs for Lambda Function Url
+        TerraformOutput(self, "lambda_url",
+        value=my_lambda_url.function_url,
+        )
+
+
+app = App()
+MyStack(app, "first_project")
+
+app.synth()

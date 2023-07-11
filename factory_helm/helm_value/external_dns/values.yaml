@@ -1,0 +1,8 @@
+aws:
+  region: ap-northeast-2
+  zoneType: public
+domainFilters:
+- zum.com
+policy: upsert-only
+region: ap-northeast-2
+registry: txt

@@ -1,0 +1,27 @@
+age: 35
+# aa
+city: New York
+name: John
+resources:
+  request:
+    cpu: 100Mi
+    mem: 200m
+    two_depth: 
+      two_one: 200
+      two_two: 200
+  limit:
+    cpu: 300Mi
+    mem: 300m
+    two_2depth: 
+      two_3usa: 300
+      two_3korea: {300,400}
+      two_4korea: [200,300]
+    three_depth: 200
+        
+        
+affinity:
+  role: ops_system
+
+    
+
+
