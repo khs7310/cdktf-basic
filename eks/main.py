@@ -51,7 +51,6 @@ class MyStack(TerraformStack):
 
 
 
-
 app = App()
 MyStack(app, "eks")
 
